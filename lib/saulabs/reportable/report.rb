@@ -63,7 +63,7 @@ module Saulabs
         ensure_valid_options(options)
         @klass        = klass
         @name         = name
-        @date_column  = (options[:date_column] || 'created_at').to_s
+        @date_column  = (options[:date_column] || "created_at").to_s
         @aggregation  = options[:aggregation] || :count
         @value_column = (options[:value_column] || (@aggregation == :count ? 'id' : name)).to_s
         @options = {
@@ -92,7 +92,8 @@ module Saulabs
       #   specifies whether data for the current reporting period is to be read; <b>if +:live_data+ is +true+, you will experience a performance hit since the request cannot be satisfied from the cache alone</b>
       # @option options [DateTime, Boolean] :end_date (false)
       #   when specified, the report will only include data for the +:limit+ reporting periods until this date.
-      #
+      #@option options [Symbol] :join (String)
+      #   when specified the  +ActiveRecord::Base#find+ call will include a join, usefull for additional conditions in :conditions
       # @return [Array<Array<DateTime, Float>>]
       #   the result of the report as pairs of {DateTime}s and {Float}s
       #
@@ -118,9 +119,10 @@ module Saulabs
           @klass.send(@aggregation,
             @value_column,
             :conditions => conditions,
-            :group      => options[:grouping].to_sql(@date_column),
-            :order      => "#{options[:grouping].to_sql(@date_column)} ASC",
-            :limit      => options[:limit]
+            :group      => options[:grouping].to_sql("#{ActiveRecord::Base.connection.quote_table_name(@klass.table_name)}.#{ActiveRecord::Base.connection.quote_column_name(@date_column.to_s)}"),
+            :order      => "#{options[:grouping].to_sql("#{ActiveRecord::Base.connection.quote_table_name(@klass.table_name)}.#{ActiveRecord::Base.connection.quote_column_name(@date_column.to_s)}")} ASC",
+            :limit      => options[:limit],
+            :joins      => options[:joins]
           )
         end
 
@@ -145,13 +147,13 @@ module Saulabs
           case context
             when :initialize
               options.each_key do |k|
-                raise ArgumentError.new("Invalid option #{k}!") unless [:limit, :aggregation, :grouping, :date_column, :value_column, :conditions, :live_data, :end_date].include?(k)
+                raise ArgumentError.new("Invalid option #{k}!") unless [:limit, :aggregation, :grouping, :date_column, :value_column, :conditions, :live_data, :end_date, :columns, :joins].include?(k)
               end
               raise ArgumentError.new("Invalid aggregation #{options[:aggregation]}!") if options[:aggregation] && ![:count, :sum, :maximum, :minimum, :average].include?(options[:aggregation])
               raise ArgumentError.new('The name of the column holding the value to sum has to be specified for aggregation :sum!') if [:sum, :maximum, :minimum, :average].include?(options[:aggregation]) && !options.key?(:value_column)
             when :run
               options.each_key do |k|
-                raise ArgumentError.new("Invalid option #{k}!") unless [:limit, :conditions, :grouping, :live_data, :end_date].include?(k)
+                raise ArgumentError.new("Invalid option #{k}!") unless [:limit, :conditions, :grouping, :live_data, :end_date, :joins].include?(k)
               end
           end
           raise ArgumentError.new('Options :live_data and :end_date may not both be specified!') if options[:live_data] && options[:end_date]
