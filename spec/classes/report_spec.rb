@@ -537,7 +537,8 @@ describe Saulabs::Reportable::Report do
             :date_column  => :created_at,
             :value_column => :id,
             :conditions   => [],
-            :live_data    => true
+            :live_data    => true,
+            :no_cache => true
           })
         }.should_not raise_error(ArgumentError)
       end

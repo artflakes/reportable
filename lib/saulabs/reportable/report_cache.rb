@@ -94,7 +94,9 @@ module Saulabs
               result << [cached[0].date_time, cached[1]]
             else
               new_cached = build_cached_data(report, options[:grouping], options[:conditions], reporting_period, find_value(new_data, reporting_period))
-              new_cached.save!
+              unless options[:no_cache] == true
+                new_cached.save!
+              end
               result << [reporting_period.date_time, new_cached.value]
             end
             reporting_period = reporting_period.next
