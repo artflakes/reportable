@@ -60,6 +60,8 @@ module Saulabs
       #   conditions like in +ActiveRecord::Base#find+; only records that match these conditions are reported;
       # @option options [Boolean] :live_data (false)
       #   specifies whether data for the current reporting period is to be read; <b>if +:live_data+ is +true+, you will experience a performance hit since the request cannot be satisfied from the cache alone</b>
+      # @option options [Boolean] :no_cache (false)
+      #   specifies wether internal cache should be used, VERY slow if option is set to true
       # @option options [DateTime, Boolean] :end_date (false)
       #   when specified, the report will only include data for the +:limit+ reporting periods until this date.
       #
@@ -69,7 +71,11 @@ module Saulabs
       def self.process(report, options, &block)
         raise ArgumentError.new('A block must be given') unless block_given?
         self.transaction do
-          cached_data = read_cached_data(report, options)
+          if options[:no_cache] == true
+            cached_data = []
+          else
+            cached_data = read_cached_data(report, options)
+          end
           new_data = read_new_data(cached_data, options, &block)
           prepare_result(new_data, cached_data, report, options)
         end

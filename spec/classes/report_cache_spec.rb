@@ -123,6 +123,17 @@ describe Saulabs::Reportable::ReportCache do
       Saulabs::Reportable::ReportCache.process(@report, @report.options) {}
     end
 
+    describe 'with :no_cache = true' do
+      before do
+        @options = @report.options.merge(:no_cache => true)
+      end
+      it 'should not read cached data' do
+        Saulabs::Reportable::ReportCache.should_receive(:read_cached_data).never
+
+        Saulabs::Reportable::ReportCache.process(@report, @options) {}
+      end
+    end
+
     describe 'with :live_data = true' do
 
       before do
